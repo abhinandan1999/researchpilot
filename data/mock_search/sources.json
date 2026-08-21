@@ -1,0 +1,98 @@
+[
+  {
+    "source_id": "src-agents-001",
+    "title": "Patterns for Reliable AI Agents",
+    "url": "https://demo.researchpilot.local/sources/agents-001",
+    "topic": "AI Agents",
+    "content": "Reliable agents constrain the tool action space, validate structured outputs, cap reasoning loops, and instrument every step with logs, metrics, and traces. Bounded timeouts and transient-only retries prevent runaway cost and latency.",
+    "published_at": "2025-01-14"
+  },
+  {
+    "source_id": "src-agents-002",
+    "title": "Why Agent Loops Need Hard Limits",
+    "url": "https://demo.researchpilot.local/sources/agents-002",
+    "topic": "AI Agents",
+    "content": "Uncapped agent loops are a leading cause of cost overruns. A maximum iteration count with a deterministic exit condition keeps agentic workflows predictable while still allowing dynamic re-planning.",
+    "published_at": "2025-02-02"
+  },
+  {
+    "source_id": "src-rag-001",
+    "title": "RAG Grounding and Traceability",
+    "url": "https://demo.researchpilot.local/sources/rag-001",
+    "topic": "RAG",
+    "content": "Retrieval-Augmented Generation grounds answers in retrieved passages so each claim maps back to a source ID. Groundedness and evidence coverage are practical signals for evaluating answer quality.",
+    "published_at": "2024-11-20"
+  },
+  {
+    "source_id": "src-rag-002",
+    "title": "Measuring Retrieval Relevance",
+    "url": "https://demo.researchpilot.local/sources/rag-002",
+    "topic": "RAG",
+    "content": "RAG quality depends on retrieving the right passages. Retrieval relevance and groundedness together determine whether a generated answer is trustworthy.",
+    "published_at": "2025-03-08"
+  },
+  {
+    "source_id": "src-memory-001",
+    "title": "Short-Term vs Long-Term Agent Memory",
+    "url": "https://demo.researchpilot.local/sources/memory-001",
+    "topic": "Agent Memory",
+    "content": "Short-term memory lives in the context window and is fast but bounded. Long-term memory uses durable storage retrieved on demand. Retrieval-based memory blends the two via semantic search.",
+    "published_at": "2025-01-30"
+  },
+  {
+    "source_id": "src-memory-002",
+    "title": "Trade-offs in Retrieval-Based Memory",
+    "url": "https://demo.researchpilot.local/sources/memory-002",
+    "topic": "Agent Memory",
+    "content": "Larger context windows reduce retrieval needs but raise cost and latency. Long-term memory improves continuity but introduces retrieval errors and staleness. Summarization compresses history at the risk of losing detail.",
+    "published_at": "2025-02-18"
+  },
+  {
+    "source_id": "src-eval-001",
+    "title": "Heuristic Evaluation of Agent Outputs",
+    "url": "https://demo.researchpilot.local/sources/eval-001",
+    "topic": "Agent Evaluation",
+    "content": "Lightweight heuristic evaluation scores completeness, groundedness, and evidence coverage. It checks that a summary exists, claims cite valid source IDs, and unsupported claims are not presented as facts.",
+    "published_at": "2025-03-22"
+  },
+  {
+    "source_id": "src-eval-002",
+    "title": "From Heuristics to LLM-as-Judge",
+    "url": "https://demo.researchpilot.local/sources/eval-002",
+    "topic": "Agent Evaluation",
+    "content": "Heuristic checks are a cheap first line of evaluation. They are not authoritative but catch obvious gaps before more expensive model-based judging is applied.",
+    "published_at": "2025-04-01"
+  },
+  {
+    "source_id": "src-obs-001",
+    "title": "Logs, Metrics, Traces for Agents",
+    "url": "https://demo.researchpilot.local/sources/obs-001",
+    "topic": "AI Observability",
+    "content": "Logs answer what the agent did, metrics answer how it is behaving, traces answer why it behaved that way, and evaluation answers whether it was good. Correlation IDs tie all four together end to end.",
+    "published_at": "2025-02-11"
+  },
+  {
+    "source_id": "src-obs-002",
+    "title": "Tracing Non-Linear Agentic Workflows",
+    "url": "https://demo.researchpilot.local/sources/obs-002",
+    "topic": "AI Observability",
+    "content": "Agentic traces branch and loop, unlike linear request/response traces. A fact-checker can route work back to research, and one request can trigger many LLM calls, so traces must capture dynamic structure.",
+    "published_at": "2025-03-15"
+  },
+  {
+    "source_id": "src-llm-001",
+    "title": "Structured Outputs in LLM Applications",
+    "url": "https://demo.researchpilot.local/sources/llm-001",
+    "topic": "LLM Applications",
+    "content": "Forcing LLMs to emit validated schemas turns unpredictable free text into reliable, machine-checkable data. Validation failures become explicit errors rather than silent corruption.",
+    "published_at": "2025-01-05"
+  },
+  {
+    "source_id": "src-llm-002",
+    "title": "Token and Cost Visibility in LLM Apps",
+    "url": "https://demo.researchpilot.local/sources/llm-002",
+    "topic": "LLM Applications",
+    "content": "Tracking input and output tokens per call exposes cost drivers. Inefficient agents that make redundant LLM calls are visible immediately when token usage is instrumented per request.",
+    "published_at": "2025-04-10"
+  }
+]
