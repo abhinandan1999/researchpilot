@@ -86,8 +86,13 @@ async def run_research(
         **safe_meta,
     }
 
+    # Scenario-qualified trace name (e.g. "parallel_research_request") so
+    # traces are identifiable at a glance in Langfuse's flat list view,
+    # instead of every run showing up under the same generic name.
+    trace_name = f"{settings.demo_scenario.value}_request"
+
     config = langfuse.build_run_config(
-        run_name="research_request",
+        run_name=trace_name,
         session_id=session_id,
         user_id=pseudonymize_user(user_id),
         metadata=trace_metadata,
@@ -111,7 +116,7 @@ async def run_research(
     graph = get_graph()
     try:
         with langfuse.research_trace(
-            "research_request", metadata=trace_metadata
+            trace_name, metadata=trace_metadata
         ) as trace:
             final_state = await graph.ainvoke(initial_state, config=config)
     except ResearchPilotError:
@@ -145,12 +150,13 @@ async def run_research(
         evidence_coverage=evaluation.evidence_coverage,
     )
 
-    # Attach evaluation (and optional user feedback) to Langfuse, best effort.
+    # Attach evaluation (and optional user feedback) to the SAME trace as the
+    # request (reuse `trace` from above — opening a new research_trace() here
+    # would score a separate, unrelated trace instead).
     try:
-        with langfuse.research_trace("research_scores") as scorer:
-            scorer.score("heuristic_overall", evaluation.overall)
-            if thumbs_up is not None:
-                scorer.score("user_feedback", 1.0 if thumbs_up else 0.0)
+        trace.score("heuristic_overall", evaluation.overall)
+        if thumbs_up is not None:
+            trace.score("user_feedback", 1.0 if thumbs_up else 0.0)
     except Exception:  # pragma: no cover - defensive
         pass
 

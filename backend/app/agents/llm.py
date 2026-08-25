@@ -73,9 +73,16 @@ async def structured_completion(
         {"role": "user", "content": user},
     ]
 
+    # Override run_name with the actual agent (planner/fact_checker/writer/
+    # planner_redundant) for this specific call, so it's identifiable in
+    # Langfuse instead of showing up as a generic ChatOpenAI/RunnableSequence
+    # node. Everything else in config (callbacks, metadata) is preserved so
+    # tracing still nests under the right request.
+    run_config = {**(config or {}), "run_name": agent_name}
+
     try:
         result = await asyncio.wait_for(
-            structured.ainvoke(messages, config=config or {}),
+            structured.ainvoke(messages, config=run_config),
             timeout=settings.llm_timeout_seconds,
         )
     except asyncio.TimeoutError as exc:
