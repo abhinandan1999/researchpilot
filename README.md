@@ -12,35 +12,33 @@ observability: **logs, metrics, traces, and evaluation**.
 
 ## Quick Start
 
+Needs Python 3.11+, `uv`, and an LLM provider set up first — Ollama
+(default, local, free) or OpenAI. See [Prerequisites](#6-prerequisites)
+for the Ollama install steps if you haven't done that yet.
+
 ```bash
 # 1. Install dependencies
 uv sync --extra dev
 
-# 2. Install Ollama and pull a model (default LLM provider — no API key,
-#    no cost). Skip this if you'd rather use OpenAI instead (see step 3).
-#    macOS/Linux: curl -fsSL https://ollama.com/install.sh | sh
-ollama pull llama3.1:8b
-
-# 3. Set up environment
+# 2. Set up environment
 cp .env.example .env
 # LLM_PROVIDER defaults to "ollama" — nothing else to fill in to run for
 # real. To use OpenAI instead, set LLM_PROVIDER=openai and OPENAI_API_KEY.
 # Langfuse keys are optional either way (for tracing).
 
-# 4. (optional) verify your LLM provider + Langfuse actually work
+# 3. Verify your LLM provider + Langfuse actually work before relying on them
 uv run python scripts/check_keys.py
 
-# 5. Start the backend — terminal 1
+# 4. Start the backend — terminal 1
 uv run uvicorn backend.app.main:app --reload --port 8000
 
-# 6. Start the frontend — terminal 2 (backend must already be running)
+# 5. Start the frontend — terminal 2 (backend must already be running)
 uv run streamlit run frontend/app.py --server.port 8501
 ```
 
 Open **http://localhost:8501**, ask a question, and switch `DEMO_SCENARIO`
 live from the sidebar dropdown — no `.env` edit or restart needed. See
-[Prerequisites](#6-prerequisites) and [Environment variables](#7-environment-variables)
-below for details.
+[Environment variables](#7-environment-variables) below for details.
 
 ---
 
