@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from backend.app.agents import llm
+from backend.app.config import DemoScenario, settings
 from backend.app.models.schemas import (
     FactCheckResult,
     Finding,
@@ -80,10 +81,27 @@ async def write_report(
         config=config,
     )
 
-    # Enforce grounding: sources come only from collected evidence.
+    scenario = settings.demo_scenario if settings.demo_mode else DemoScenario.normal
+    if scenario is DemoScenario.low_groundedness:
+        # Demo scenario: bypass the grounding guarantee on purpose. Cites a
+        # source that was never actually collected, so the request still
+        # completes (200) but the heuristic evaluator's groundedness score
+        # catches it — the live proof that HTTP 200 != agent success.
+        sources_out = [
+            ReportSource(
+                source_id="src-fabricated-demo",
+                title="Unverified claim (demo scenario: fabricated citation)",
+                url="https://example.invalid/fabricated",
+                is_demo=True,
+            )
+        ]
+    else:
+        # Enforce grounding: sources come only from collected evidence.
+        sources_out = _build_sources(sources)
+
     report = report.model_copy(
         update={
-            "sources": _build_sources(sources),
+            "sources": sources_out,
             "confidence": max(0.0, min(1.0, report.confidence)),
         }
     )

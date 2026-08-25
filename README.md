@@ -182,6 +182,7 @@ $env:DEMO_SCENARIO="slow_search"; uv run uvicorn backend.app.main:app --port 800
 | `expensive_agent` | Extra LLM call → higher token/cost visibility |
 | `agent_loop` | Fact checker forces one extra research iteration (max 2) |
 | `parallel_research` | Supervisor dispatches **two sub-agents in parallel**; each is given a distinct, deterministic delay (web ≈1.5s, kb ≈0.5s) so their `subagent_started`/`subagent_completed` log lines **interleave** — making concurrent execution visible in logs, metrics, and traces |
+| `low_groundedness` | Writer cites a fabricated source outside the collected evidence; the request still **completes (200)**, but the heuristic evaluator's `groundedness` score catches it — the clearest live proof that **HTTP 200 ≠ agent success** |
 
 Failures (and the parallel delays) are **deterministic**, never random.
 
@@ -282,6 +283,9 @@ metrics, evaluation, and the frontend API client.
 7. **parallel_research** — Supervisor fans out to two sub-agents at once; watch
    both `subagent_started` lines appear before either `subagent_completed`,
    and the overlapping sibling spans in the Langfuse trace timeline.
+8. **low_groundedness** — request still returns 200/"completed", but the
+   writer cites a fabricated source and the evaluator's `groundedness` score
+   catches it — HTTP 200 ≠ agent success, live.
 
 Concept map: **Logs** = what did my agent do · **Metrics** = how is it behaving ·
 **Traces** = why did it behave this way · **Evaluation** = was it actually good.

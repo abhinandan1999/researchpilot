@@ -28,6 +28,7 @@ class DemoScenario(str, Enum):
     expensive_agent = "expensive_agent"
     agent_loop = "agent_loop"
     parallel_research = "parallel_research"
+    low_groundedness = "low_groundedness"
 
 
 class Settings(BaseSettings):
