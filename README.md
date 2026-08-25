@@ -8,7 +8,32 @@ answer using a multi-agent workflow — while emitting the four pillars of agent
 observability: **logs, metrics, traces, and evaluation**.
 
 > This is a **production-inspired workshop architecture**, not a fully
-> production-ready system. See [Known limitations](#19-troubleshooting).
+> production-ready system. See [Known limitations](#16-troubleshooting).
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+uv sync --extra dev
+
+# 2. Set up environment
+cp .env.example .env
+# then fill in OPENAI_API_KEY (required), and optionally the Langfuse keys
+
+# 3. (optional) verify your keys actually work before relying on them
+uv run python scripts/check_keys.py
+
+# 4. Start the backend — terminal 1
+uv run uvicorn backend.app.main:app --reload --port 8000
+
+# 5. Start the frontend — terminal 2 (backend must already be running)
+uv run streamlit run frontend/app.py --server.port 8501
+```
+
+Open **http://localhost:8501**, ask a question, and switch `DEMO_SCENARIO`
+live from the sidebar dropdown — no `.env` edit or restart needed. See
+[Prerequisites](#6-prerequisites) and [Environment variables](#7-environment-variables)
+below for details.
 
 ---
 
@@ -108,19 +133,7 @@ All agent execution happens in the backend.
 - An OpenAI API key (for real research runs)
 - *(Optional)* Langfuse Cloud keys (for tracing)
 
-## 7. uv setup
-
-```bash
-uv sync --extra dev
-```
-
-Copy the environment template and fill in your keys:
-
-```bash
-cp .env.example .env
-```
-
-## 8. Environment variables
+## 7. Environment variables
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -137,35 +150,23 @@ cp .env.example .env
 | `MAX_RESEARCH_ITERATIONS` | `2` | Hard loop cap |
 | `MAX_QUESTION_LENGTH` | `4000` | Input validation |
 | `DEMO_MODE` | `true` | Enable demo scenarios |
-| `DEMO_SCENARIO` | `normal` | See [Demo scenarios](#12-demo-scenarios) |
+| `DEMO_SCENARIO` | `normal` | See [Demo scenarios](#9-demo-scenarios) |
 | `BACKEND_URL` | `http://localhost:8000` | Used by the frontend |
 
 Credentials are never hardcoded and never logged.
 
-## 9. Start the backend
-
-```bash
-uv run uvicorn backend.app.main:app --reload --port 8000
-```
-
-## 10. Start the frontend
-
-```bash
-uv run streamlit run frontend/app.py --server.port 8501
-```
-
-Open http://localhost:8501.
-
-## 11. Example questions
+## 8. Example questions
 
 - What are the most effective approaches for building reliable AI agents?
 - What are reliable approaches for AI agent memory?
 - How does RAG improve the groundedness of LLM applications?
 - Why is tracing agentic systems different from traditional apps?
 
-## 12. Demo scenarios
+## 9. Demo scenarios
 
-Set `DEMO_SCENARIO` (env) then restart the backend, or export inline:
+Switch scenarios live from the frontend sidebar dropdown — no restart needed.
+Headless/no-UI alternative: set `DEMO_SCENARIO` (env) then restart the
+backend, or export inline:
 
 ```bash
 # Windows PowerShell
@@ -184,7 +185,7 @@ $env:DEMO_SCENARIO="slow_search"; uv run uvicorn backend.app.main:app --port 800
 
 Failures (and the parallel delays) are **deterministic**, never random.
 
-## 13. Inspecting Langfuse traces
+## 10. Inspecting Langfuse traces
 
 1. Add Langfuse keys to `.env` and restart the backend.
 2. Run a research request from the frontend.
@@ -199,7 +200,7 @@ Failures (and the parallel delays) are **deterministic**, never random.
 With `LANGFUSE_CAPTURE_INPUT=false`, the raw question is replaced by
 `question_length` and `question_hash`.
 
-## 14. Logging architecture
+## 11. Logging architecture
 
 Structured JSON via **structlog**. Every line includes `timestamp`, `level`,
 `service`, `event`, and — when in a request — `request_id`, `trace_id`,
@@ -214,7 +215,7 @@ sub-agents run concurrently, their log lines interleave — the shared
 re-thread a single sub-agent's story out of the interleaved stream. Secrets
 are redacted; prompts/responses are not dumped by default.
 
-## 15. Metrics endpoint
+## 12. Metrics endpoint
 
 ```bash
 curl http://localhost:8000/api/v1/metrics
@@ -227,7 +228,7 @@ tools (calls/failures/timeouts), retries, and LLM tokens. This is a
 sub-agent counts (and a `subagent_reports` breakdown) are also returned in each
 response's `observability` block.
 
-## 16. Evaluation
+## 13. Evaluation
 
 A `heuristic_evaluation` scores **completeness**, **groundedness**, and
 **evidence_coverage** in `[0,1]` (checks: summary exists, claims cite valid
@@ -235,14 +236,14 @@ source ids, writer only used collected evidence). It is a heuristic, not an
 authoritative judge. Optional 👍/👎 user feedback is recorded via
 `POST /api/v1/feedback`.
 
-## 17. Concurrency model
+## 14. Concurrency model
 
 Fully async request path. Request identity lives in **contextvars** (never
 global mutable state), so concurrent users never leak context. Per-request
 metrics (tokens/tool/LLM counts) are also contextvar-scoped. Simulated latency
 uses `asyncio.sleep`; all I/O has real `asyncio.wait_for` timeouts.
 
-## 18. Testing
+## 15. Testing
 
 ```bash
 uv run pytest
@@ -254,7 +255,7 @@ fallback, graph routing, the research loop and max-iteration cap, tools,
 **real timeout interruption**, retries, failure scenarios, structured logging,
 metrics, evaluation, and the frontend API client.
 
-## 19. Troubleshooting
+## 16. Troubleshooting
 
 - **`OPENAI_API_KEY is not configured`** — real research needs a key in `.env`.
   Tests do not (LLM is mocked).
