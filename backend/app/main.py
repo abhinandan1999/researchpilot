@@ -28,7 +28,8 @@ async def lifespan(app: FastAPI):
         environment=settings.environment,
         demo_mode=settings.demo_mode,
         demo_scenario=settings.demo_scenario.value,
-        openai_configured=settings.openai_configured,
+        llm_provider=settings.llm_provider.value,
+        llm_configured=settings.llm_configured,
         langfuse_configured=settings.langfuse_configured,
     )
     try:

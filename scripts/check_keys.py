@@ -1,4 +1,4 @@
-"""Verify OPENAI_API_KEY and Langfuse credentials are valid.
+"""Verify the active LLM provider and Langfuse credentials are valid.
 
 This is a manual connectivity check, not a pytest test: the automated
 suite intentionally mocks the LLM and never requires Langfuse (see
@@ -8,19 +8,16 @@ workshop/demo to confirm both integrations will actually work.
 Usage:
     uv run python scripts/check_keys.py
 
-Checks OpenAI first, then Langfuse, and always runs both even if the
-first fails, so you get a full picture in one pass. The OpenAI check
-makes one minimal chat completion capped at 100 output tokens (trivial
-cost). The Langfuse check uses the SDK's built-in auth_check() — one
-call to the projects API, no traces/spans created, no OpenAI cost.
-Neither check ever prints a secret key.
+Checks whichever LLM_PROVIDER is active (ollama or openai), then
+Langfuse, and always runs both even if the first fails, so you get a
+full picture in one pass. Neither check ever prints a secret key.
 """
 
 from __future__ import annotations
 
 import sys
 
-from backend.app.config import settings
+from backend.app.config import LLMProvider, settings
 
 
 def check_openai() -> bool:
@@ -72,6 +69,46 @@ def check_openai() -> bool:
     return True
 
 
+def check_ollama() -> bool:
+    print("--- Ollama ---")
+    import httpx
+
+    try:
+        resp = httpx.get(f"{settings.ollama_base_url}/api/tags", timeout=5)
+        resp.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        print(f"FAIL: could not reach Ollama at {settings.ollama_base_url} ({exc})")
+        print("  Is it running? Try: ollama serve")
+        return False
+
+    models = [m.get("name", "") for m in resp.json().get("models", [])]
+    if not any(settings.ollama_model in m for m in models):
+        print(f"FAIL: model '{settings.ollama_model}' is not pulled")
+        print(f"  Available locally: {models or '(none)'}")
+        print(f"  Run: ollama pull {settings.ollama_model}")
+        return False
+
+    from langchain_ollama import ChatOllama
+
+    try:
+        model = ChatOllama(
+            model=settings.ollama_model,
+            base_url=settings.ollama_base_url,
+            temperature=0,
+        )
+        response = model.invoke(
+            [{"role": "user", "content": "Reply with the single word: pong"}]
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"FAIL: Ollama chat call failed ({exc})")
+        return False
+
+    print("OK: Ollama is reachable and the model responded")
+    print(f"  model: {settings.ollama_model}")
+    print(f"  reply: {response.content!r}")
+    return True
+
+
 def check_langfuse() -> bool:
     print("--- Langfuse ---")
     if not settings.langfuse_configured:
@@ -99,16 +136,19 @@ def check_langfuse() -> bool:
 
 
 def main() -> int:
-    openai_ok = check_openai()
+    provider = settings.llm_provider.value
+    print(f"Active LLM_PROVIDER: {provider}\n")
+
+    llm_ok = check_ollama() if settings.llm_provider is LLMProvider.ollama else check_openai()
     print()
     langfuse_ok = check_langfuse()
     print()
 
     print("--- Summary ---")
-    print(f"  OpenAI:   {'OK' if openai_ok else 'FAIL'}")
-    print(f"  Langfuse: {'OK' if langfuse_ok else 'FAIL'}")
+    print(f"  LLM ({provider}): {'OK' if llm_ok else 'FAIL'}")
+    print(f"  Langfuse:         {'OK' if langfuse_ok else 'FAIL'}")
 
-    return 0 if (openai_ok and langfuse_ok) else 1
+    return 0 if (llm_ok and langfuse_ok) else 1
 
 
 if __name__ == "__main__":

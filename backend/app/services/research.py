@@ -81,7 +81,8 @@ async def run_research(
     trace_metadata = {
         "request_id": request_id,
         "environment": settings.environment,
-        "model": settings.openai_model,
+        "llm_provider": settings.llm_provider.value,
+        "model": settings.active_model,
         "demo_scenario": settings.demo_scenario.value,
         **safe_meta,
     }
@@ -155,6 +156,9 @@ async def run_research(
     # would score a separate, unrelated trace instead).
     try:
         trace.score("heuristic_overall", evaluation.overall)
+        trace.score("completeness", evaluation.completeness)
+        trace.score("groundedness", evaluation.groundedness)
+        trace.score("evidence_coverage", evaluation.evidence_coverage)
         if thumbs_up is not None:
             trace.score("user_feedback", 1.0 if thumbs_up else 0.0)
     except Exception:  # pragma: no cover - defensive

@@ -58,6 +58,8 @@ async def health() -> HealthResponse:
 async def ready() -> ReadyResponse:
     return ReadyResponse(
         status="ready",
+        llm_provider=settings.llm_provider.value,
+        llm_configured=settings.llm_configured,
         openai_configured=settings.openai_configured,
         langfuse_configured=settings.langfuse_configured,
         demo_scenario=settings.demo_scenario.value,

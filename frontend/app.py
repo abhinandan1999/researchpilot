@@ -56,8 +56,10 @@ def _render_sidebar(client: ApiClient) -> None:
         try:
             ready = client.ready()
             st.success("Connected")
+            provider = ready.get("llm_provider", "?")
             st.write(
-                f"OpenAI configured: **{ready.get('openai_configured', False)}**"
+                f"LLM provider: **{provider}** "
+                f"({'ready' if ready.get('llm_configured', False) else 'NOT configured'})"
             )
             st.write(
                 f"Langfuse configured: **{ready.get('langfuse_configured', False)}**"

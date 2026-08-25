@@ -13,7 +13,7 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
-from backend.app.config import settings
+from backend.app.config import LLMProvider, settings
 from backend.app.observability.logging import get_logger
 from backend.app.observability.metrics import metrics
 from backend.app.utils.errors import LLMError
@@ -24,7 +24,17 @@ TModel = TypeVar("TModel", bound=BaseModel)
 
 
 def get_chat_model(temperature: float = 0.2) -> Any:
-    """Create a configured ChatOpenAI model instance."""
+    """Create a configured chat model instance for the active provider."""
+
+    if settings.llm_provider is LLMProvider.ollama:
+        from langchain_ollama import ChatOllama
+
+        return ChatOllama(
+            model=settings.ollama_model,
+            base_url=settings.ollama_base_url,
+            temperature=temperature,
+            timeout=settings.llm_timeout_seconds,
+        )
 
     from langchain_openai import ChatOpenAI
 

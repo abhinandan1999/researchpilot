@@ -18,6 +18,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 
 
+class LLMProvider(str, Enum):
+    """Which LLM backend the agents call."""
+
+    ollama = "ollama"
+    openai = "openai"
+
+
 class DemoScenario(str, Enum):
     """Deterministic workshop demo scenarios."""
 
@@ -41,9 +48,18 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # --- OpenAI ---
+    # --- LLM provider ---
+    llm_provider: LLMProvider = Field(default=LLMProvider.ollama, alias="LLM_PROVIDER")
+
+    # --- OpenAI (only required when LLM_PROVIDER=openai) ---
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
+
+    # --- Ollama (default provider; no API key needed, runs locally) ---
+    ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
+    ollama_base_url: str = Field(
+        default="http://localhost:11434", alias="OLLAMA_BASE_URL"
+    )
 
     # --- Langfuse ---
     langfuse_public_key: str = Field(default="", alias="LANGFUSE_PUBLIC_KEY")
@@ -90,6 +106,26 @@ class Settings(BaseSettings):
     @property
     def openai_configured(self) -> bool:
         return bool(self.openai_api_key)
+
+    @property
+    def active_model(self) -> str:
+        """The model name for whichever provider is active."""
+
+        if self.llm_provider is LLMProvider.openai:
+            return self.openai_model
+        return self.ollama_model
+
+    @property
+    def llm_configured(self) -> bool:
+        """Whether the active provider is ready to serve real requests.
+
+        Ollama needs no key (reachability is checked at call time, same as
+        any other network dependency); OpenAI needs an API key.
+        """
+
+        if self.llm_provider is LLMProvider.openai:
+            return self.openai_configured
+        return True
 
     @property
     def langfuse_configured(self) -> bool:

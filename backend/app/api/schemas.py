@@ -54,6 +54,8 @@ class HealthResponse(BaseModel):
 
 class ReadyResponse(BaseModel):
     status: str
+    llm_provider: str
+    llm_configured: bool
     openai_configured: bool
     langfuse_configured: bool
     demo_scenario: str

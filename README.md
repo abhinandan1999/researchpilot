@@ -16,17 +16,24 @@ observability: **logs, metrics, traces, and evaluation**.
 # 1. Install dependencies
 uv sync --extra dev
 
-# 2. Set up environment
-cp .env.example .env
-# then fill in OPENAI_API_KEY (required), and optionally the Langfuse keys
+# 2. Install Ollama and pull a model (default LLM provider — no API key,
+#    no cost). Skip this if you'd rather use OpenAI instead (see step 3).
+#    macOS/Linux: curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.1:8b
 
-# 3. (optional) verify your keys actually work before relying on them
+# 3. Set up environment
+cp .env.example .env
+# LLM_PROVIDER defaults to "ollama" — nothing else to fill in to run for
+# real. To use OpenAI instead, set LLM_PROVIDER=openai and OPENAI_API_KEY.
+# Langfuse keys are optional either way (for tracing).
+
+# 4. (optional) verify your LLM provider + Langfuse actually work
 uv run python scripts/check_keys.py
 
-# 4. Start the backend — terminal 1
+# 5. Start the backend — terminal 1
 uv run uvicorn backend.app.main:app --reload --port 8000
 
-# 5. Start the frontend — terminal 2 (backend must already be running)
+# 6. Start the frontend — terminal 2 (backend must already be running)
 uv run streamlit run frontend/app.py --server.port 8501
 ```
 
@@ -78,8 +85,8 @@ scores the result.
                                                       │            Writer        │
                                                       └──────┬─────────────┬─────┘
                                                              ▼             ▼
-                                                          OpenAI      Local Tools
-                                                                     (search/docs/source)
+                                                        LLM Provider   Local Tools
+                                                      (Ollama/OpenAI) (search/docs/source)
                                                              │
                                                              ▼
                                                           Langfuse
@@ -128,24 +135,69 @@ All agent execution happens in the backend.
 
 ## 6. Prerequisites
 
-- Python **3.11+**
-- [`uv`](https://docs.astral.sh/uv/)
-- An OpenAI API key (for real research runs)
-- *(Optional)* Langfuse Cloud keys (for tracing)
+- **Python 3.11+**
+- **[`uv`](https://docs.astral.sh/uv/)** — dependency management and running all commands in this README
+- **An LLM provider — one of:**
+
+  **Option A — [Ollama](https://ollama.com)** (default, `LLM_PROVIDER=ollama`).
+  Runs locally, no API key, no usage cost. Needs a machine with a few GB
+  free (ideally a GPU or Apple Silicon — CPU-only works but is slower).
+
+  ```bash
+  # 1. Install Ollama
+  #    macOS/Linux:
+  curl -fsSL https://ollama.com/install.sh | sh
+  #    Windows / GUI installer: https://ollama.com/download
+
+  # 2. Start the Ollama server (skip if it's already running as a
+  #    background service after install)
+  ollama serve &
+
+  # 3. Pull the default model (~4.9 GB)
+  ollama pull llama3.1:8b
+
+  # 4. Verify it's reachable
+  ollama list
+  curl http://localhost:11434/api/version
+  ```
+
+  Nothing else to configure — `LLM_PROVIDER=ollama`, `OLLAMA_MODEL`, and
+  `OLLAMA_BASE_URL` in `.env.example` already point at this setup.
+
+  **Option B — OpenAI** (`LLM_PROVIDER=openai` in `.env`). Requires
+  `OPENAI_API_KEY`, real usage cost, but faster and doesn't depend on
+  local hardware.
+
+  Either way: tests need neither (the LLM is mocked). The backend and
+  frontend will start regardless of provider status, but
+  `/api/v1/research` fails on every request until the active provider is
+  actually reachable — run `uv run python scripts/check_keys.py` to
+  confirm before relying on it.
+- **A Langfuse Cloud account** (public + secret key) — the app runs fully
+  without it, but the Traces pillar of the demo needs it. See
+  [Environment variables](#7-environment-variables) and
+  [Inspecting Langfuse traces](#10-inspecting-langfuse-traces).
+- **VS Code** (or any editor) — this project has no editor-specific
+  config checked in (no `.vscode/`), so any code editor works; VS Code is
+  what this project has been developed and demoed with.
+- **A modern web browser** — to use the Streamlit frontend.
 
 ## 7. Environment variables
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OPENAI_API_KEY` | – | OpenAI key (required for research) |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Chat model |
+| `LLM_PROVIDER` | `ollama` | `ollama` or `openai` — which LLM backend the agents call |
+| `OLLAMA_MODEL` | `llama3.1:8b` | Ollama model (must be pulled locally) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server endpoint |
+| `OPENAI_API_KEY` | – | OpenAI key (required only when `LLM_PROVIDER=openai`) |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI chat model (only used when `LLM_PROVIDER=openai`) |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | – | Optional tracing |
 | `LANGFUSE_HOST` | `https://cloud.langfuse.com` | Langfuse endpoint |
 | `LANGFUSE_CAPTURE_INPUT` | `false` | When `false`, raw question is NOT sent to Langfuse (only length + hash) |
 | `ENVIRONMENT` | `local` | Environment tag |
 | `LOG_LEVEL` | `INFO` | Log level |
 | `TOOL_TIMEOUT_SECONDS` | `10` | Real per-tool timeout |
-| `LLM_TIMEOUT_SECONDS` | `30` | Real per-LLM-call timeout |
+| `LLM_TIMEOUT_SECONDS` | `60` | Real per-LLM-call timeout (generous default for local Ollama inference; lower it if using OpenAI) |
 | `MAX_RETRIES` | `2` | Bounded transient retries |
 | `MAX_RESEARCH_ITERATIONS` | `2` | Hard loop cap |
 | `MAX_QUESTION_LENGTH` | `4000` | Input validation |
@@ -190,13 +242,15 @@ Failures (and the parallel delays) are **deterministic**, never random.
 
 1. Add Langfuse keys to `.env` and restart the backend.
 2. Run a research request from the frontend.
-3. Open Langfuse → Traces. One request = one trace, with nested spans:
-   `research_request → planner → supervisor → {web_research ‖ kb_research}
-   → aggregator → fact_check → writer`. The two `subagent:*` spans are
+3. Open Langfuse → Traces. One request = one trace, named
+   `<scenario>_request` (e.g. `parallel_research_request`), with nested
+   spans: `planner → supervisor → {web_research ‖ kb_research} →
+   aggregator → fact_check → writer`. The two `subagent:*` spans are
    **siblings that overlap in time** — the trace timeline shows them running
    in parallel. Each carries token usage per LLM call, tags (`environment`,
-   `scenario:*`), the session id, and the `heuristic_overall` /
-   `user_feedback` scores.
+   `scenario:*`), the session id, and five scores: `heuristic_overall`,
+   `completeness`, `groundedness`, `evidence_coverage`, and (when supplied)
+   `user_feedback`.
 
 With `LANGFUSE_CAPTURE_INPUT=false`, the raw question is replaced by
 `question_length` and `question_hash`.
@@ -250,7 +304,7 @@ uses `asyncio.sleep`; all I/O has real `asyncio.wait_for` timeouts.
 uv run pytest
 ```
 
-OpenAI is mocked; Langfuse is never required. Includes tests for endpoints,
+The LLM is mocked; Langfuse is never required. Includes tests for endpoints,
 middleware, request context, **concurrent isolation**, planner validation and
 fallback, graph routing, the research loop and max-iteration cap, tools,
 **real timeout interruption**, retries, failure scenarios, structured logging,
@@ -258,8 +312,15 @@ metrics, evaluation, and the frontend API client.
 
 ## 16. Troubleshooting
 
-- **`OPENAI_API_KEY is not configured`** — real research needs a key in `.env`.
-  Tests do not (LLM is mocked).
+- **`/api/v1/research` fails immediately** — check `GET /ready`'s
+  `llm_configured` field. With `LLM_PROVIDER=ollama` (default), make sure
+  `ollama serve` is running and the model in `OLLAMA_MODEL` is pulled
+  (`ollama pull llama3.1:8b`); `uv run python scripts/check_keys.py`
+  diagnoses this directly. With `LLM_PROVIDER=openai`, `OPENAI_API_KEY`
+  needs to be set. Tests need neither (the LLM is mocked).
+- **Ollama request hangs or times out** — a cold model load (first call
+  after starting Ollama) can be slow; `LLM_TIMEOUT_SECONDS` defaults to
+  `60` for this reason. Raise it further on slower/CPU-only machines.
 - **Frontend says "Backend unreachable"** — start the backend on port 8000.
 - **No Langfuse traces** — set both Langfuse keys and restart.
 - **Import errors running Streamlit** — run `uv sync` so the `frontend` and
@@ -274,7 +335,7 @@ metrics, evaluation, and the frontend API client.
 
 ## Workshop demo sequence
 
-1. **normal** — show Streamlit → FastAPI → LangGraph → (OpenAI) → Langfuse.
+1. **normal** — show Streamlit → FastAPI → LangGraph → (Ollama/OpenAI) → Langfuse.
 2. **slow_search** — "the agent is slow, but where exactly?" → timeout span.
 3. **search_failure** — error logs, failed span, recovery.
 4. **search_retry** — attempt 1 → failure, attempt 2 → success.
