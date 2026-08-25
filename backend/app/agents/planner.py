@@ -26,10 +26,12 @@ Break the user's question into 3-5 concrete research tasks.
 Each task MUST use exactly one of these allowed capabilities: {_ALLOWED}.
 - search_sources: search demo web-style sources for a topic
 - search_documents: search the local knowledge base of markdown documents
-- get_source: retrieve one known source by id (use rarely)
+- get_source: retrieve one known source by its exact id
 
-Prefer search_sources and search_documents. Write a short, specific query
-for each task. Do not invent capabilities outside the allowed list.
+Only use search_sources and search_documents. Never use get_source: no
+source ids exist yet at this planning stage, so a get_source task here can
+only ever reference a made-up id and will fail. Write a short, specific
+query for each task. Do not invent capabilities outside the allowed list.
 Return a clear objective describing what a good answer must cover."""
 
 
