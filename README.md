@@ -26,13 +26,17 @@ cp .env.example .env
 # real. To use OpenAI instead, set LLM_PROVIDER=openai and OPENAI_API_KEY.
 # Langfuse keys are optional either way (for tracing).
 
-# 3. Verify your LLM provider + Langfuse actually work before relying on them
+# 3. If using Ollama: it does NOT start automatically, and this needs to
+#    be running every session, not just once at install time.
+curl -sS http://localhost:11434/api/version || ollama serve &
+
+# 4. Verify your LLM provider + Langfuse actually work before relying on them
 uv run python scripts/check_keys.py
 
-# 4. Start the backend — terminal 1
+# 5. Start the backend — terminal 1
 uv run uvicorn backend.app.main:app --reload --port 8000
 
-# 5. Start the frontend — terminal 2 (backend must already be running)
+# 6. Start the frontend — terminal 2 (backend must already be running)
 uv run streamlit run frontend/app.py --server.port 8501
 ```
 
@@ -348,3 +352,7 @@ metrics, evaluation, and the frontend API client.
 
 Concept map: **Logs** = what did my agent do · **Metrics** = how is it behaving ·
 **Traces** = why did it behave this way · **Evaluation** = was it actually good.
+
+
+## Kill a Process
+```lsof -ti:<port number> | xargs kill```
