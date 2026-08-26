@@ -63,7 +63,12 @@ async def test_graph_agent_loop_runs_two_iterations():
 
 def test_route_back_to_supervisor_when_insufficient():
     state = {
-        "fact_check_results": FactCheckResult(sufficient_evidence=False),
+        "fact_check_results": FactCheckResult(
+            supported_claims=[],
+            unsupported_claims=[],
+            missing_evidence=[],
+            sufficient_evidence=False,
+        ),
         "iteration_count": 1,
     }
     assert route_after_fact_check(state) == "supervisor"
@@ -71,7 +76,12 @@ def test_route_back_to_supervisor_when_insufficient():
 
 def test_route_to_writer_at_max_iterations():
     state = {
-        "fact_check_results": FactCheckResult(sufficient_evidence=False),
+        "fact_check_results": FactCheckResult(
+            supported_claims=[],
+            unsupported_claims=[],
+            missing_evidence=[],
+            sufficient_evidence=False,
+        ),
         "iteration_count": settings.max_research_iterations,
     }
     assert route_after_fact_check(state) == "writer"
@@ -79,7 +89,12 @@ def test_route_to_writer_at_max_iterations():
 
 def test_route_to_writer_when_sufficient():
     state = {
-        "fact_check_results": FactCheckResult(sufficient_evidence=True),
+        "fact_check_results": FactCheckResult(
+            supported_claims=[],
+            unsupported_claims=[],
+            missing_evidence=[],
+            sufficient_evidence=True,
+        ),
         "iteration_count": 1,
     }
     assert route_after_fact_check(state) == "writer"

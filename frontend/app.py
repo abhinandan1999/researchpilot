@@ -47,6 +47,22 @@ def _init_state() -> None:
         st.session_state.feedback_sent = False
 
 
+@st.fragment(run_every="3s")
+def _render_live_metrics(client: ApiClient) -> None:
+    """Auto-refreshing metrics panel.
+
+    Wrapped in its own fragment so only this panel re-runs on the timer —
+    a plain st.json() call only re-fetches when the whole page reruns
+    (e.g. on a button click), so it never picks up activity from outside
+    this browser session (another scenario run, a direct curl, etc.).
+    """
+
+    try:
+        st.json(client.metrics())
+    except Exception:
+        st.caption("Metrics unavailable.")
+
+
 def _render_sidebar(client: ApiClient) -> None:
     with st.sidebar:
         st.header("Session")
@@ -89,11 +105,8 @@ def _render_sidebar(client: ApiClient) -> None:
         except Exception:
             st.caption("Demo scenario control unavailable.")
 
-        with st.expander("Live metrics"):
-            try:
-                st.json(client.metrics())
-            except Exception:
-                st.caption("Metrics unavailable.")
+        with st.expander("Live metrics", expanded=True):
+            _render_live_metrics(client)
 
 
 def _render_observability(result) -> None:

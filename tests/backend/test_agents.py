@@ -109,7 +109,10 @@ async def test_writer_only_cites_collected_sources():
     ]
     findings = [Finding(claim="c", evidence="e", source_ids=["src-1"])]
     fact_check = FactCheckResult(
-        supported_claims=["c"], sufficient_evidence=True
+        supported_claims=["c"],
+        unsupported_claims=[],
+        missing_evidence=[],
+        sufficient_evidence=True,
     )
     report = await writer.write_report("q", findings, sources, fact_check)
 

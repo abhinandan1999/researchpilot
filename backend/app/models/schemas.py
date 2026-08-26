@@ -91,12 +91,19 @@ class Finding(BaseModel):
 
 
 class FactCheckResult(BaseModel):
-    """Structured output of the Fact Checker agent."""
+    """Structured output of the Fact Checker agent.
 
-    supported_claims: list[str] = Field(default_factory=list)
-    unsupported_claims: list[str] = Field(default_factory=list)
-    missing_evidence: list[str] = Field(default_factory=list)
-    sufficient_evidence: bool = True
+    Deliberately no defaults: sufficient_evidence directly controls the
+    research loop's control flow (route_after_fact_check). If the LLM
+    returns a degenerate/empty response, this must fail schema validation
+    (structured_completion raises LLMError) rather than silently default
+    to sufficient_evidence=True and skip evidence review entirely.
+    """
+
+    supported_claims: list[str]
+    unsupported_claims: list[str]
+    missing_evidence: list[str]
+    sufficient_evidence: bool
 
 
 # --------------------------------------------------------------------------

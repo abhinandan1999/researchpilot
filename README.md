@@ -355,4 +355,11 @@ Concept map: **Logs** = what did my agent do · **Metrics** = how is it behaving
 
 
 ## Kill a Process
-```lsof -ti:<port number> | xargs kill```
+#### Backend
+lsof -ti:8000 | xargs kill
+
+#### Frontend
+lsof -ti:8501 | xargs kill
+
+#### Ollama
+lsof -ti:11434 | xargs kill
